@@ -24,18 +24,17 @@ async fn main() -> Result<()>{
         timestamp TIMESTAMP
     )").execute(&pool).await?;
 
-    sqlx::query("INSERT INTO msg (from_, to_, content, uuid, connected_msg_uuid, timestamp) VALUES (?, ?, ?, ?, ?, ?)")
-        .bind("Alice")
-        .bind("Bob")
-        .bind("Hello, Bob!")
-        .bind(1)
-        .bind(0)
-        .bind(0)
+    sqlx::query("INSERT INTO msg (from_, to_, content, connected_msg_uuid) VALUES (?, ?, ?, ?)")
+        .bind("田中")
+        .bind("鈴木")
+        .bind("お疲れ様です。先日の件について確認したいのですが、お時間ありますでしょうか？")
+        .bind(-1)
         .execute(&pool).await?;
 
 
 
     let messages: Vec<DataBaseMsg> = sqlx::query_as::<_, DataBaseMsg>("SELECT * FROM msg").fetch_all(&pool).await?;
+    println!("{:?}", messages);
 
     Ok(())
 }
