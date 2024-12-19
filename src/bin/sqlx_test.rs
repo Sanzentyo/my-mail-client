@@ -8,7 +8,7 @@ struct DataBaseMsg {
     content: String,
     uuid: i64,
     connected_msg_uuid: i64,
-    timstamp: i64,
+    timestamp: i64,
 }
 
 #[tokio::main]
@@ -24,7 +24,7 @@ async fn main() -> Result<()>{
         timestamp TIMESTAMP
     )").execute(&pool).await?;
 
-    sqlx::query("INSERT INTO msg (from_, to_, content, uuid, connected_msg_uuid, timstamp) VALUES (?, ?, ?, ?, ?, ?)")
+    sqlx::query("INSERT INTO msg (from_, to_, content, uuid, connected_msg_uuid, timestamp) VALUES (?, ?, ?, ?, ?, ?)")
         .bind("Alice")
         .bind("Bob")
         .bind("Hello, Bob!")
