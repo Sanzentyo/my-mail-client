@@ -83,6 +83,7 @@ async fn main() {
                                     content: msg.content,
                                     timestamp: msg.timestamp,
                                     uuid: msg.uuid,
+                                    connected_id: msg.connected_msg_uuid,
                                     children_msg: Vec::new(), // TODO: implement recursive search
                                 }).collect(),
                             };
@@ -97,22 +98,38 @@ async fn main() {
                             
                             // Convert to tree structure
                             let mut msg_map = std::collections::HashMap::new();
-                            let mut root_msgs: Vec<Message> = Vec::new();
-
-                            // First, create a map of all messages
-                            for msg in msgs {
+                            for msgdb in msgs {
                                 let message = Message {
-                                    from: msg.from_user,
-                                    to: msg.to_user,
-                                    content: msg.content,
-                                    timestamp: msg.timestamp,
-                                    uuid: msg.uuid,
+                                    from: msgdb.from_user,
+                                    to: msgdb.to_user,
+                                    content: msgdb.content,
+                                    timestamp: msgdb.timestamp,
+                                    uuid: msgdb.uuid,
                                     children_msg: Vec::new(),
+                                    connected_id: msgdb.connected_msg_uuid,
                                 };
-                                msg_map.insert(msg.uuid, message);
+                                msg_map.insert(message.uuid, message);
                             }
 
-                            // Then, build the tree structure
+                            let mut updates = Vec::new();
+                            for parent in msg_map.values() {
+                                let p_uuid = parent.uuid;
+                                let mut children = Vec::new();
+                                for child in msg_map.values() {
+                                    if child.connected_id == p_uuid {
+                                        children.push(child.clone());
+                                    }
+                                }
+                                updates.push((p_uuid, children));
+                            }
+                            
+                            for (uuid, children) in updates {
+                                if let Some(parent) = msg_map.get_mut(&uuid) {
+                                    parent.children_msg = children;
+                                }
+                            }
+
+                            let mut root_msgs = Vec::new();
                             for msg in msg_map.values() {
                                 if msg.uuid == args.select_uuid {
                                     root_msgs.push(msg.clone());

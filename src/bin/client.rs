@@ -101,12 +101,6 @@ async fn main() -> io::Result<()> {
                 std::io::stdin().read_line(&mut max_msg_input)?;
                 let max_msg: i64 = max_msg_input.trim().parse().unwrap_or(-1);
 
-                let mut recursive_input = String::new();
-                print!("recursive (例: 0): ");
-                io::stdout().flush()?;
-                std::io::stdin().read_line(&mut recursive_input)?;
-                let recursive: i64 = recursive_input.trim().parse().unwrap_or(0);
-
                 let mut from_name = String::new();
                 print!("from_user_name (なければ空文字): ");
                 io::stdout().flush()?;
@@ -137,7 +131,6 @@ async fn main() -> io::Result<()> {
                     timestamp: 0,
                     args: Args::ListMsg(ListMsgArgs {
                         max_msg,
-                        recursive,
                         from_user_name,
                         to_user_name,
                         since,
@@ -221,15 +214,16 @@ async fn main() -> io::Result<()> {
 
 fn print_message(msg: &Message, depth: usize) {
     let indent = "  ".repeat(depth);
-    println!("{}--------------------------------", indent);
-    println!("{}From: {}", indent, msg.from);
-    println!("{}To: {}", indent, msg.to);
-    println!("{}Content: {}", indent, msg.content);
-    println!("{}UUID: {}", indent, msg.uuid);
-    println!("{}Timestamp: {}", indent, msg.timestamp);
+    let line = "-".repeat(31 - depth * 2);
+    println!("{}|{line}", indent);
+    println!("{}| From: {}", indent, msg.from);
+    println!("{}| To: {}", indent, msg.to);
+    println!("{}| Content: {}", indent, msg.content);
+    println!("{}| UUID: {}", indent, msg.uuid);
+    println!("{}| Timestamp: {}", indent, msg.timestamp);
     
     if !msg.children_msg.is_empty() {
-        println!("{}Children:", indent);
+        println!("{}| Children:", indent);
         for child in &msg.children_msg {
             print_message(child, depth + 1);
         }

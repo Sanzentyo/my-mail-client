@@ -61,7 +61,6 @@ pub struct SendMsgResponse {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ListMsgArgs {
     pub max_msg: i64,
-    pub recursive: i64,
     pub from_user_name: String,
     pub to_user_name: String,
     pub since: i64,
@@ -95,5 +94,6 @@ pub struct Message {
     pub content: String,
     pub timestamp: i64,
     pub uuid: i64,
+    pub connected_id: i64,
     pub children_msg: Vec<Message>,
 }
