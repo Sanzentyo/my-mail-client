@@ -3,8 +3,8 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt, BufReader, BufWriter};
 use std::sync::Arc;
 
 use my_mail_client::{
-    command::{SendCommand, Args, SendMsgResponse, CheckMsgResponse, Message, ResponseStatus},
-    db::{create_table, insert_msg, check_msg},
+    command::{SendCommand, Args, SendMsgResponse, ListMsgResponse, SearchMsgResponse, Message, ResponseStatus},
+    db::{create_table, insert_msg, list_msg, search_msg},
 };
 
 use chrono::Utc;
@@ -71,26 +71,64 @@ async fn main() {
                             writer.flush().await.unwrap();
                             println!("SendMsg sent");
                         },
-                        Args::CheckMsg(args) => {
-                            let msgs = check_msg(&pool, args).await.unwrap();
-
-                            println!("CheckMsg received");
-                            let responce = CheckMsgResponse {
+                        Args::ListMsg(args) => {
+                            let msgs = list_msg(&pool, args).await.unwrap();
+                            
+                            let response = ListMsgResponse {
                                 status: ResponseStatus::Ok,
-                                timestamp: chrono::Utc::now().timestamp(),
+                                timestamp: Utc::now().timestamp(),
                                 msg: msgs.into_iter().map(|msg| Message {
                                     from: msg.from_user,
                                     to: msg.to_user,
                                     content: msg.content,
                                     timestamp: msg.timestamp,
                                     uuid: msg.uuid,
-                                    children_msg: vec![],
-                                }).collect::<Vec<Message>>(),
+                                    children_msg: Vec::new(), // TODO: implement recursive search
+                                }).collect(),
                             };
-                            let json = serde_json::to_string(&responce).unwrap();
+
+                            let json = serde_json::to_string(&response).unwrap();
                             writer.write_all(json.as_bytes()).await.unwrap();
                             writer.flush().await.unwrap();
-                            println!("CheckMsg sent");
+                            println!("ListMsg sent");
+                        },
+                        Args::SearchMsg(args) => {
+                            let msgs = search_msg(&pool, args, 0).await.unwrap();
+                            
+                            // Convert to tree structure
+                            let mut msg_map = std::collections::HashMap::new();
+                            let mut root_msgs: Vec<Message> = Vec::new();
+
+                            // First, create a map of all messages
+                            for msg in msgs {
+                                let message = Message {
+                                    from: msg.from_user,
+                                    to: msg.to_user,
+                                    content: msg.content,
+                                    timestamp: msg.timestamp,
+                                    uuid: msg.uuid,
+                                    children_msg: Vec::new(),
+                                };
+                                msg_map.insert(msg.uuid, message);
+                            }
+
+                            // Then, build the tree structure
+                            for msg in msg_map.values() {
+                                if msg.uuid == args.select_uuid {
+                                    root_msgs.push(msg.clone());
+                                }
+                            }
+
+                            let response = SearchMsgResponse {
+                                status: ResponseStatus::Ok,
+                                timestamp: Utc::now().timestamp(),
+                                msg: root_msgs,
+                            };
+
+                            let json = serde_json::to_string(&response).unwrap();
+                            writer.write_all(json.as_bytes()).await.unwrap();
+                            writer.flush().await.unwrap();
+                            println!("SearchMsg sent");
                         },
                     }
 

@@ -41,7 +41,8 @@ pub struct SendCommand {
 #[derive(Serialize, Deserialize, Debug)]
 pub enum Args {
     SendMsg(SendMsgArgs), // "send_msg"コマンド
-    CheckMsg(CheckMsgArgs), // "check_msg"コマンド
+    ListMsg(ListMsgArgs), // "list_msg"コマンド
+    SearchMsg(SearchMsgArgs), // "search_msg"コマンド
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -58,22 +59,36 @@ pub struct SendMsgResponse {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct CheckMsgArgs {
-    pub max_msg: i64, // デフォルトは-1で無制限
-    pub recursive: i64, // デフォルトは-1で無制限
-    pub from_user_name: String, // 特定の相手からメッセージだけ表示、空文字なら全員表示
-    pub since: i64, // タイムスタンプと同じ形式で、-1がデフォルトで指定なし
-    pub until: i64, // タイムスタンプと同じ形式で、-1がデフォルトで指定なし
+pub struct ListMsgArgs {
+    pub max_msg: i64,
+    pub recursive: i64,
+    pub from_user_name: String,
+    pub to_user_name: String,
+    pub since: i64,
+    pub until: i64,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct CheckMsgResponse {
+pub struct ListMsgResponse {
     pub status: ResponseStatus,
     pub timestamp: i64,
     pub msg: Vec<Message>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+pub struct SearchMsgArgs {
+    pub select_uuid: i64,
+    pub recursive: i64,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct SearchMsgResponse {
+    pub status: ResponseStatus,
+    pub timestamp: i64,
+    pub msg: Vec<Message>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Message {
     pub from: String,
     pub to: String,
