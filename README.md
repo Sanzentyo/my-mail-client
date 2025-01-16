@@ -9,7 +9,7 @@
 - intは全部64bitにする
 
 ## 送信
-``` json
+``` javascript
 {
    "command": string,
    "user_name": string,
@@ -24,7 +24,7 @@
 
 ### リクエスト(argsの内容)
 
-``` json
+``` javascript
 send_msg {
    "to": [string],
    "content": string,
@@ -34,7 +34,7 @@ send_msg {
 
 
 ### レスポンス
-``` json
+``` javascript
 responce {
    "status": string,
    "timestamp": int
@@ -45,7 +45,7 @@ responce {
 ## `list_msg`
 
 ### リクエスト(argsの内容)
-``` json
+``` javascript
 list_msg {
    "max_msg": int, // デフォルトは-1で無制限
    "from_user_name": string, // 特定の相手からメッセージだけ表示、空文字なら全員表示
@@ -57,7 +57,7 @@ list_msg {
 
 ### レスポンス
 
-``` json
+``` javascript
 responce {
    "status": string,
    "timestamp": int,
@@ -65,7 +65,7 @@ responce {
 }
 ```
 
-``` json
+``` javascript
 msg {
    "from": string,
    "to": string,
@@ -77,7 +77,7 @@ msg {
 ```
 
 ## `search_msg`
-``` json
+``` javascript
 search_msg {
    "select_uuid": int, // msgのuuid
    "recursive": int, // スレッドを何回まで再帰的に検索するか、デフォルトは0、-1で見つからなくなるまで永遠に
@@ -86,7 +86,7 @@ search_msg {
 
 ### レスポンス
 
-``` json
+``` javascript
 responce {
    "status": string,
    "timestamp": int,
@@ -94,7 +94,7 @@ responce {
 }
 ```
 
-``` json
+``` javascript
 msg {
    "from": string,
    "to": string,
