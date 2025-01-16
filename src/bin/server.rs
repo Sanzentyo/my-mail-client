@@ -95,22 +95,21 @@ async fn main() {
                         },
                         Args::SearchMsg(args) => {
                             let msgs = search_msg(&pool, args, 0).await.unwrap();
-                            
-                            // Convert to tree structure
                             let mut msg_map = std::collections::HashMap::new();
-                            for msgdb in msgs {
+                            for m in msgs {
                                 let message = Message {
-                                    from: msgdb.from_user,
-                                    to: msgdb.to_user,
-                                    content: msgdb.content,
-                                    timestamp: msgdb.timestamp,
-                                    uuid: msgdb.uuid,
+                                    from: m.from_user,
+                                    to: m.to_user,
+                                    content: m.content,
+                                    timestamp: m.timestamp,
+                                    uuid: m.uuid,
                                     children_msg: Vec::new(),
-                                    connected_id: msgdb.connected_msg_uuid,
+                                    connected_id: m.connected_msg_uuid,
                                 };
                                 msg_map.insert(message.uuid, message);
                             }
 
+                            // 子を設定
                             let mut updates = Vec::new();
                             for parent in msg_map.values() {
                                 let p_uuid = parent.uuid;
@@ -122,17 +121,17 @@ async fn main() {
                                 }
                                 updates.push((p_uuid, children));
                             }
-                            
                             for (uuid, children) in updates {
-                                if let Some(parent) = msg_map.get_mut(&uuid) {
-                                    parent.children_msg = children;
+                                if let Some(p) = msg_map.get_mut(&uuid) {
+                                    p.children_msg = children;
                                 }
                             }
 
+                            // ルート(connected_id = -1 か、存在しない)を探す
                             let mut root_msgs = Vec::new();
-                            for msg in msg_map.values() {
-                                if msg.uuid == args.select_uuid {
-                                    root_msgs.push(msg.clone());
+                            for m in msg_map.values() {
+                                if m.connected_id == -1 || !msg_map.contains_key(&m.connected_id) {
+                                    root_msgs.push(m.clone());
                                 }
                             }
 

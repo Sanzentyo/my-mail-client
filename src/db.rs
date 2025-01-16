@@ -5,7 +5,7 @@ use crate::command::{
     SearchMsgArgs,
 };
 
-#[derive(Debug, sqlx::FromRow)]
+#[derive(Debug, sqlx::FromRow, Clone)]
 pub struct MsgDB {
     pub from_user: String,
     pub to_user: String,
@@ -127,7 +127,7 @@ pub async fn search_msg(pool: &sqlx::SqlitePool, args: &SearchMsgArgs, current_d
         .fetch_optional(pool)
         .await?;
 
-        if let Some(msg) = base_msg {
+        if let Some(msg) = base_msg.clone() {
             // Get child messages
             let child_msgs = sqlx::query_as::<_, MsgDB>(
                 "SELECT * FROM msg WHERE connected_msg_uuid = ?"
@@ -146,6 +146,18 @@ pub async fn search_msg(pool: &sqlx::SqlitePool, args: &SearchMsgArgs, current_d
                 results.append(&mut child_results);
             }
         }
+
+        // 親の再帰取得も行う
+        if let Some(msg) = &base_msg {
+            if msg.connected_msg_uuid != -1 {
+                let mut parent_results = search_msg(pool, &SearchMsgArgs {
+                    select_uuid: msg.connected_msg_uuid,
+                    recursive: args.recursive,
+                }, current_depth + 1).await?;
+                results.append(&mut parent_results);
+            }
+        }
+
         Ok(results)
     }).await
 }
