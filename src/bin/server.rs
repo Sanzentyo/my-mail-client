@@ -1,5 +1,7 @@
-use tokio::net::{TcpListener, TcpStream};
+use tokio::net::TcpListener;
 use tokio::io::{AsyncReadExt, AsyncWriteExt, BufReader, BufWriter};
+
+use my_mail_client::command::{SendCommand, Args};
 
 const LOCAL: &str = "127.0.0.1:4747";
 const MAX_BUFFER_SIZE: usize = 1024;
@@ -26,18 +28,29 @@ async fn main() {
                         return;
                     }
                     let received = String::from_utf8_lossy(&buffer[..n]);
-                    println!("Received: {}", received);
 
-                    if received == "clear" {
-                        // socketの中身をクリア
+                    let recv_json = match serde_json::from_str::<SendCommand>(&received) {
+                        Ok(input) => input,
+                        Err(_) => {
+                            writer.write_all("Invalid json".as_bytes()).await.unwrap();
+                            writer.flush().await.unwrap();
+                            continue;
+                        },
+                    };
 
+                    match &recv_json.args {
+                        Args::SendMsg(args) => {
+                            println!("Message received: {:?}", args);
+                        },
+                        Args::CheckMsg(_) => {
+                            println!("CheckMsg received");
+                        },
                     }
 
-                    tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+                    //tokio::time::sleep(std::time::Duration::from_secs(5)).await;
 
                     // jsonを送信
-                    let response = format!("Hello, {}!", received);
-                    writer.write_all(response.as_bytes()).await.unwrap();
+                    writer.write_all("Recieved".as_bytes()).await.unwrap();
                     writer.flush().await.unwrap();
                 }
             }
