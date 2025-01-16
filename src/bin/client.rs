@@ -57,7 +57,7 @@ async fn main() -> io::Result<()> {
                 let content = content.trim().to_string();
 
                 let mut conn_id_input = String::new();
-                print!("connected_id (なければ-1): ");
+                print!("connected_id (なければ空白): ");
                 io::stdout().flush()?;
                 std::io::stdin().read_line(&mut conn_id_input)?;
                 let connected_id: i64 = conn_id_input.trim().parse().unwrap_or(-1);
@@ -96,7 +96,7 @@ async fn main() -> io::Result<()> {
             "list" => {
                 // 引数を標準入力で取得
                 let mut max_msg_input = String::new();
-                print!("max_msg (なければ-1): ");
+                print!("max_msg (なければ空白): ");
                 io::stdout().flush()?;
                 std::io::stdin().read_line(&mut max_msg_input)?;
                 let max_msg: i64 = max_msg_input.trim().parse().unwrap_or(-1);
@@ -120,13 +120,13 @@ async fn main() -> io::Result<()> {
                 let to_user_name = to_name.trim().to_string();
 
                 let mut since_input = String::new();
-                print!("since (なければ-1): ");
+                print!("since (なければ空白): ");
                 io::stdout().flush()?;
                 std::io::stdin().read_line(&mut since_input)?;
                 let since: i64 = since_input.trim().parse().unwrap_or(-1);
 
                 let mut until_input = String::new();
-                print!("until (なければ-1): ");
+                print!("until (なければ空白): ");
                 io::stdout().flush()?;
                 std::io::stdin().read_line(&mut until_input)?;
                 let until: i64 = until_input.trim().parse().unwrap_or(-1);
@@ -173,7 +173,7 @@ async fn main() -> io::Result<()> {
                 let select_uuid: i64 = uuid_input.trim().parse().unwrap_or(-1);
 
                 let mut recursive_input = String::new();
-                print!("recursive (例: 0): ");
+                print!("recursive (例: 0、しないなら空白): ");
                 io::stdout().flush()?;
                 std::io::stdin().read_line(&mut recursive_input)?;
                 let recursive: i64 = recursive_input.trim().parse().unwrap_or(0);
