@@ -1,5 +1,13 @@
 use serde::{Deserialize, Serialize};
 use tokio::io::{self, AsyncReadExt, BufReader};
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum ResponseStatus {
+    Ok,
+    Failed,
+    Invalid,
+}
+
 pub async fn read_json<'a, T>(reader: &mut BufReader<tokio::net::tcp::ReadHalf<'a>>) -> io::Result<T>
 where
     T: for<'de> serde::Deserialize<'de> + serde::Serialize,
@@ -45,7 +53,7 @@ pub struct SendMsgArgs {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SendMsgResponse {
-    pub status: String,
+    pub status: ResponseStatus,
     pub timestamp: i64,
 }
 
@@ -60,7 +68,7 @@ pub struct CheckMsgArgs {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct CheckMsgResponse {
-    pub status: String,
+    pub status: ResponseStatus,
     pub timestamp: i64,
     pub msg: Vec<Message>,
 }

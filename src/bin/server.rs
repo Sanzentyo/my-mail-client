@@ -3,9 +3,11 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt, BufReader, BufWriter};
 use std::sync::Arc;
 
 use my_mail_client::{
-    command::{SendCommand, Args, SendMsgResponse, CheckMsgResponse, Message},
+    command::{SendCommand, Args, SendMsgResponse, CheckMsgResponse, Message, ResponseStatus},
     db::{create_table, insert_msg, check_msg},
 };
+
+use chrono::Utc;
 
 
 const LOCAL: &str = "127.0.0.1:4747";
@@ -56,11 +58,11 @@ async fn main() {
                     match &recv_json.args {
                         Args::SendMsg(args) => {
                             println!("Message received: {:?}", args);
-                            let timestamp = chrono::Utc::now().timestamp();
+                            let timestamp = Utc::now().timestamp();
                             insert_msg(&pool, &recv_json.user_name, args, timestamp).await.unwrap();
 
                             let responce = SendMsgResponse {
-                                status: "ok".to_string(),
+                                status: ResponseStatus::Ok,
                                 timestamp,
                             };
 
@@ -74,7 +76,7 @@ async fn main() {
 
                             println!("CheckMsg received");
                             let responce = CheckMsgResponse {
-                                status: "ok".to_string(),
+                                status: ResponseStatus::Ok,
                                 timestamp: chrono::Utc::now().timestamp(),
                                 msg: msgs.into_iter().map(|msg| Message {
                                     from: msg.from_user,

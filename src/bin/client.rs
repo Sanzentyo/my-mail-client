@@ -7,7 +7,7 @@ use my_mail_client::command::{
     read_json,
     SendCommand,
     Args, SendMsgArgs, CheckMsgArgs,
-    SendMsgResponse, CheckMsgResponse
+    SendMsgResponse, CheckMsgResponse, ResponseStatus
 };
 
 const SERVER_ADDR: &str = "127.0.0.1:4747";
@@ -48,12 +48,25 @@ async fn main() -> io::Result<()> {
                 
                 match read_json::<CheckMsgResponse>(&mut reader).await {
                     Ok(response) => {
-                        println!("Received: {:?}", response);
+                        match response.status {
+                            ResponseStatus::Ok => {
+                                println!("Received OK with timestamp: {}", response.timestamp);
+                                // メッセージの処理
+                                for msg in response.msg {
+                                    println!("{:?}", msg);
+                                }
+                            },
+                            ResponseStatus::Failed => {
+                                println!("Received Failed with timestamp: {}", response.timestamp);
+                            },
+                            ResponseStatus::Invalid => {
+                                println!("Received Invalid with timestamp: {}", response.timestamp);
+                            },
+                        }
                     },
                     Err(e) => {
                         println!("Failed to parse response: {:?}", e);
                     },
-                    
                 }
             },
             _ => {
@@ -74,16 +87,23 @@ async fn main() -> io::Result<()> {
 
                 match read_json::<SendMsgResponse>(&mut reader).await {
                     Ok(response) => {
-                        println!("Received: {:?}", response);
+                        match response.status {
+                            ResponseStatus::Ok => {
+                                println!("Received OK with timestamp: {}", response.timestamp);
+                            },
+                            ResponseStatus::Failed => {
+                                println!("Received Failed with timestamp: {}", response.timestamp);
+                            },
+                            ResponseStatus::Invalid => {
+                                println!("Received Invalid with timestamp: {}", response.timestamp);
+                            },
+                        }
                     },
                     Err(e) => {
                         println!("Failed to parse response: {:?}", e);
                     },
-                    
                 }
-        }
-            
+            }
         };
-
     }
 }
