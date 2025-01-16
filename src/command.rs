@@ -1,4 +1,26 @@
 use serde::{Deserialize, Serialize};
+use tokio::io::{self, AsyncReadExt, BufReader};
+pub async fn read_json<'a, T>(reader: &mut BufReader<tokio::net::tcp::ReadHalf<'a>>) -> io::Result<T>
+where
+    T: for<'de> serde::Deserialize<'de> + serde::Serialize,
+{
+    let mut buffer = Vec::new();
+    let mut temp_buf = [0; 4096];  // より大きなバッファサイズ
+
+    loop {
+        let n = reader.read(&mut temp_buf).await?;
+        if n == 0 {
+            Err(io::Error::new(io::ErrorKind::UnexpectedEof, "EOF"))?;
+        }
+        buffer.extend_from_slice(&temp_buf[..n]);
+        
+        // JSONの完全性をチェック
+        match serde_json::from_slice::<T>(&buffer) {
+            Ok(json) => return Ok(json),
+            Err(_) => continue,
+        }
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SendCommand {

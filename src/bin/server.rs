@@ -1,17 +1,32 @@
 use tokio::net::TcpListener;
 use tokio::io::{AsyncReadExt, AsyncWriteExt, BufReader, BufWriter};
+use std::sync::Arc;
 
-use my_mail_client::command::{SendCommand, Args};
+use my_mail_client::{
+    command::{SendCommand, Args, SendMsgResponse, CheckMsgResponse, Message},
+    db::{create_table, insert_msg, check_msg},
+};
+
 
 const LOCAL: &str = "127.0.0.1:4747";
 const MAX_BUFFER_SIZE: usize = 1024;
+const DB_PATH: &str = "./msg.db";
 
 #[tokio::main]
 async fn main() {
+    if !std::path::Path::new(DB_PATH).exists() {
+        std::fs::File::create(DB_PATH).unwrap();
+    }
+
+    let pool = sqlx::sqlite::SqlitePool::connect(&format!("sqlite://{}", DB_PATH)).await.unwrap();
+    create_table(&pool).await.unwrap();
+    let pool = Arc::new(pool);
+
     let listener = TcpListener::bind(LOCAL).await.unwrap();
 
     loop {
         let (mut socket, addr) = listener.accept().await.unwrap();
+        let pool = pool.clone();
         println!("Accepted client: {:?}", addr);
         
         tokio::spawn(async move {
@@ -41,17 +56,43 @@ async fn main() {
                     match &recv_json.args {
                         Args::SendMsg(args) => {
                             println!("Message received: {:?}", args);
+                            let timestamp = chrono::Utc::now().timestamp();
+                            insert_msg(&pool, &recv_json.user_name, args, timestamp).await.unwrap();
+
+                            let responce = SendMsgResponse {
+                                status: "ok".to_string(),
+                                timestamp,
+                            };
+
+                            let json = serde_json::to_string(&responce).unwrap();
+                            writer.write_all(json.as_bytes()).await.unwrap();
+                            writer.flush().await.unwrap();
+                            println!("SendMsg sent");
                         },
-                        Args::CheckMsg(_) => {
+                        Args::CheckMsg(args) => {
+                            let msgs = check_msg(&pool, args).await.unwrap();
+
                             println!("CheckMsg received");
+                            let responce = CheckMsgResponse {
+                                status: "ok".to_string(),
+                                timestamp: chrono::Utc::now().timestamp(),
+                                msg: msgs.into_iter().map(|msg| Message {
+                                    from: msg.from_user,
+                                    to: msg.to_user,
+                                    content: msg.content,
+                                    timestamp: msg.timestamp,
+                                    uuid: msg.uuid,
+                                    children_msg: vec![],
+                                }).collect::<Vec<Message>>(),
+                            };
+                            let json = serde_json::to_string(&responce).unwrap();
+                            writer.write_all(json.as_bytes()).await.unwrap();
+                            writer.flush().await.unwrap();
+                            println!("CheckMsg sent");
                         },
                     }
 
                     //tokio::time::sleep(std::time::Duration::from_secs(5)).await;
-
-                    // jsonを送信
-                    writer.write_all("Recieved".as_bytes()).await.unwrap();
-                    writer.flush().await.unwrap();
                 }
             }
         });

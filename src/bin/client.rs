@@ -1,9 +1,14 @@
 use tokio::net::TcpStream;
-use tokio::io::{AsyncReadExt, AsyncWriteExt, BufReader, BufWriter};
+use tokio::io::{AsyncWriteExt, BufReader, BufWriter};
 use std::io::{self, Write};
 use serde_json;
 
-use my_mail_client::command::{SendCommand, Args, SendMsgArgs, CheckMsgArgs};
+use my_mail_client::command::{
+    read_json,
+    SendCommand,
+    Args, SendMsgArgs, CheckMsgArgs,
+    SendMsgResponse, CheckMsgResponse
+};
 
 const SERVER_ADDR: &str = "127.0.0.1:4747";
 
@@ -22,40 +27,63 @@ async fn main() -> io::Result<()> {
         let mut content = String::new();
         io::stdin().read_line(&mut content)?;
 
-        let input = match content.trim() {
-            "check" => SendCommand {
-                command: "check_msg".to_string(),
-                user_name: "user1".to_string(),
-                timestamp: 0,
-                args: Args::CheckMsg(CheckMsgArgs {
-                    max_msg: -1,
-                    recursive: -1,
-                    from_user_name: "".to_string(),
-                    since: -1,
-                    until: -1,
-                }),
+        match content.trim() {
+            "check" => {
+                let command = SendCommand {
+                    command: "check_msg".to_string(),
+                    user_name: "user1".to_string(),
+                    timestamp: 0,
+                    args: Args::CheckMsg(CheckMsgArgs {
+                        max_msg: -1,
+                        recursive: -1,
+                        from_user_name: "user1".to_string(),
+                        since: -1,
+                        until: -1,
+                    }),
+                };
+                let json = serde_json::to_string(&command).unwrap();
+                writer.write_all(json.as_bytes()).await?;
+                writer.flush().await?;
+                println!("Sent: {}", json);
+                
+                match read_json::<CheckMsgResponse>(&mut reader).await {
+                    Ok(response) => {
+                        println!("Received: {:?}", response);
+                    },
+                    Err(e) => {
+                        println!("Failed to parse response: {:?}", e);
+                    },
+                    
+                }
             },
-            _ => SendCommand {
-                command: "send_msg".to_string(),
-                user_name: "user1".to_string(),
-                timestamp: 0,
-                args: Args::SendMsg(SendMsgArgs {
-                    to: "user2".to_string(),
-                    content: content.trim().to_string(),
-                    connected_id: -1,
-                }),
-            }
+            _ => {
+                let command = SendCommand {
+                    command: "send_msg".to_string(),
+                    user_name: "user1".to_string(),
+                    timestamp: 0,
+                    args: Args::SendMsg(SendMsgArgs {
+                        to: "user2".to_string(),
+                        content: content.trim().to_string(),
+                        connected_id: -1,
+                    }),
+                };
+                let json = serde_json::to_string(&command).unwrap();
+                writer.write_all(json.as_bytes()).await?;
+                writer.flush().await?;
+                println!("Sent: {}", json);
+
+                match read_json::<SendMsgResponse>(&mut reader).await {
+                    Ok(response) => {
+                        println!("Received: {:?}", response);
+                    },
+                    Err(e) => {
+                        println!("Failed to parse response: {:?}", e);
+                    },
+                    
+                }
+        }
             
         };
-        
-        let json = serde_json::to_string(&input)?;
-        writer.write_all(json.as_bytes()).await?;
-        writer.flush().await?;
 
-        println!("Message sent: {:?}", input);
-        
-        let mut buffer = [0; 1024];
-        let n = reader.read(&mut buffer).await?;
-        println!("Response: {}", String::from_utf8_lossy(&buffer[..n]));
     }
 }
