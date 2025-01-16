@@ -24,11 +24,18 @@ async fn main() -> io::Result<()> {
         
         io::stdout().flush()?;
         
-        let mut content = String::new();
-        io::stdin().read_line(&mut content)?;
+        let mut command_line = String::new();
+        io::stdin().read_line(&mut command_line)?;
 
-        match content.trim() {
+        let commands = command_line.split_whitespace().collect::<Vec<&str>>();
+
+        match commands[0] {
             "check" => {
+                if commands.len() < 2 {
+                    eprintln!("Error: 'check' command requires a username argument.");
+                    continue;
+                }
+                let from_user_name = commands[1].to_string();
                 let command = SendCommand {
                     command: "check_msg".to_string(),
                     user_name: "user1".to_string(),
@@ -36,7 +43,7 @@ async fn main() -> io::Result<()> {
                     args: Args::CheckMsg(CheckMsgArgs {
                         max_msg: -1,
                         recursive: -1,
-                        from_user_name: "user1".to_string(),
+                        from_user_name,
                         since: -1,
                         until: -1,
                     }),
@@ -76,7 +83,7 @@ async fn main() -> io::Result<()> {
                     timestamp: 0,
                     args: Args::SendMsg(SendMsgArgs {
                         to: "user2".to_string(),
-                        content: content.trim().to_string(),
+                        content: command_line.trim().to_string(),
                         connected_id: -1,
                     }),
                 };
