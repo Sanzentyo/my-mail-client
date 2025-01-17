@@ -3,7 +3,7 @@ use tokio::io::{AsyncWriteExt, BufReader, BufWriter};
 use std::io::{self, Write};
 use serde_json;
 
-use my_mail_client::command::{
+use rust_thread_messenger::command::{
     read_json,
     SendCommand,
     Args, SendMsgArgs, ListMsgArgs, SearchMsgArgs,

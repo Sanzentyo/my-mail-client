@@ -2,7 +2,7 @@ use tokio::net::TcpListener;
 use tokio::io::{AsyncReadExt, AsyncWriteExt, BufReader, BufWriter};
 use std::sync::Arc;
 
-use my_mail_client::{
+use rust_thread_messenger::{
     command::{SendCommand, Args, SendMsgResponse, ListMsgResponse, SearchMsgResponse, Message, ResponseStatus},
     db::{create_table, insert_msg, list_msg, search_msg},
 };
@@ -11,7 +11,7 @@ use chrono::Utc;
 
 
 const LOCAL: &str = "127.0.0.1:4747";
-const MAX_BUFFER_SIZE: usize = 1024;
+const MAX_BUFFER_SIZE: usize = 1<<16;
 const DB_PATH: &str = "./msg.db";
 
 #[tokio::main]
@@ -38,8 +38,8 @@ async fn main() {
 
             loop {
                 // jsonを受信
-                let mut buffer = [0; MAX_BUFFER_SIZE];
-                while let Ok(n) = reader.read(&mut buffer).await {
+                let mut buffer = Box::new([0; MAX_BUFFER_SIZE]);
+                while let Ok(n) = reader.read(&mut buffer[..]).await {
                     if n == 0 {
                         println!("Client disconnected: {:?}", addr);
                         return;
