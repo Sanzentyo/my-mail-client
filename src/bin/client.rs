@@ -6,6 +6,7 @@ use serde_json;
 use rust_thread_messenger::command::{
     read_json,
     SendCommand,
+    CommandType,
     Args, SendMsgArgs, ListMsgArgs, SearchMsgArgs,
     SendMsgResponse, ListMsgResponse, SearchMsgResponse, ResponseStatus,
     Message,
@@ -63,7 +64,7 @@ async fn main() -> io::Result<()> {
                 let connected_id: i64 = conn_id_input.trim().parse().unwrap_or(-1);
 
                 let command = SendCommand {
-                    command: "send_msg".to_string(),
+                    command: CommandType::SendMsg,
                     user_name: user_name.clone(),
                     timestamp: 0,
                     args: Args::SendMsg(SendMsgArgs {
@@ -126,7 +127,7 @@ async fn main() -> io::Result<()> {
                 let until: i64 = until_input.trim().parse().unwrap_or(-1);
 
                 let command = SendCommand {
-                    command: "list_msg".to_string(),
+                    command: CommandType::ListMsg,
                     user_name: user_name.clone(),
                     timestamp: 0,
                     args: Args::ListMsg(ListMsgArgs {
@@ -172,7 +173,7 @@ async fn main() -> io::Result<()> {
                 let recursive: i64 = recursive_input.trim().parse().unwrap_or(0);
 
                 let command = SendCommand {
-                    command: "search_msg".to_string(),
+                    command: CommandType::SearchMsg,
                     user_name: user_name.clone(),
                     timestamp: 0,
                     args: Args::SearchMsg(SearchMsgArgs {

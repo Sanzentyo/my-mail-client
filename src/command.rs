@@ -37,14 +37,23 @@ where
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "snake_case")]
+pub enum CommandType {
+    SendMsg,
+    ListMsg,
+    SearchMsg,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct SendCommand {
-    pub command: String,
+    pub command: CommandType,
     pub user_name: String,
     pub timestamp: i64,
     pub args: Args,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(untagged)]
 pub enum Args {
     SendMsg(SendMsgArgs), // "send_msg"コマンド
     ListMsg(ListMsgArgs), // "list_msg"コマンド
