@@ -3,7 +3,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt, BufReader, BufWriter};
 use std::sync::Arc;
 
 use rust_thread_messenger::{
-    command::{SendCommand, Args, SendMsgResponse, ListMsgResponse, SearchMsgResponse, Message, ResponseStatus},
+    command::{SendCommand, Args, SendMsgResponse, ListMsgResponse, SearchMsgResponse, Message, ResponseStatus, InvaildResponse},
     db::{create_table, insert_msg, list_msg, search_msg},
 };
 
@@ -16,45 +16,65 @@ const DB_PATH: &str = "./msg.db";
 
 #[tokio::main]
 async fn main() {
+
+    // パスにDBファイルが存在しない場合は作成
     if !std::path::Path::new(DB_PATH).exists() {
         std::fs::File::create(DB_PATH).unwrap();
     }
 
+    // DB接続
     let pool = sqlx::sqlite::SqlitePool::connect(&format!("sqlite://{}", DB_PATH)).await.unwrap();
     create_table(&pool).await.unwrap();
-    let pool = Arc::new(pool);
+    let pool = Arc::new(pool); // スレッド間で共有するためArcでラップ
 
+    // ポートをバインド
     let listener = TcpListener::bind(LOCAL).await.unwrap();
 
+    // クライアントからの接続を待ち受けループを開始
     loop {
+        // クライアントからの接続を待ち受け
         let (mut socket, addr) = listener.accept().await.unwrap();
         let pool = pool.clone();
         println!("Accepted client: {:?}", addr);
         
+        // クライアントごとにスレッドを立てる
         tokio::spawn(async move {
+            // クライアントとの通信を行うためのreader, writerに分割
             let (reader, writer) = socket.split();
             let mut reader = BufReader::new(reader);
             let mut writer = BufWriter::new(writer);
 
+            // 切断されるまでクライアントからのリクエストを待ち受け
             loop {
                 // jsonを受信
-                let mut buffer = Box::new([0; MAX_BUFFER_SIZE]);
+                let mut buffer = Box::new([0; MAX_BUFFER_SIZE]); // Boxでヒープに確保
                 while let Ok(n) = reader.read(&mut buffer[..]).await {
+                    // クライアントが切断した場合
                     if n == 0 {
                         println!("Client disconnected: {:?}", addr);
                         return;
                     }
                     let received = String::from_utf8_lossy(&buffer[..n]);
 
+                    // jsonをパース
                     let recv_json = match serde_json::from_str::<SendCommand>(&received) {
                         Ok(input) => input,
                         Err(_) => {
-                            writer.write_all("Invalid json".as_bytes()).await.unwrap();
+                            // パースに失敗した場合
+                            let invaild_json = InvaildResponse {
+                                status: ResponseStatus::Invalid,
+                                timestamp: Utc::now().timestamp(),
+                            };
+                            let json = serde_json::to_string(&invaild_json).unwrap();
+
+                            writer.write_all(json.as_bytes()).await.unwrap();
                             writer.flush().await.unwrap();
                             continue;
                         },
                     };
 
+
+                    // コマンドによって処理を分岐
                     match &recv_json.args {
                         Args::SendMsg(args) => {
                             println!("Message received: {:?}", args);

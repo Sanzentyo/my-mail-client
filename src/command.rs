@@ -25,8 +25,14 @@ where
         // JSONの完全性をチェック
         match serde_json::from_slice::<T>(&buffer) {
             Ok(json) => return Ok(json),
-            Err(_) => continue,
-        }
+            Err(_) => (),
+        };
+
+        // Invalidの結果が入ったJSONかチェック
+        match serde_json::from_slice::<InvaildResponse>(&buffer) {
+            Ok(_) => return Err(io::Error::new(io::ErrorKind::InvalidData, "Invalid JSON")),
+            Err(_) => (),
+        };
     }
 }
 
@@ -50,6 +56,12 @@ pub struct SendMsgArgs {
     pub to: String,
     pub content: String,
     pub connected_id: i64, // ない場合は-1
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct InvaildResponse {
+    pub status: ResponseStatus,
+    pub timestamp: i64,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
